@@ -2,11 +2,16 @@ package ru.yandex.practicum.sleeptracker;
 
 import java.util.List;
 
+/**
+ * Вычисляет среднюю продолжительность сессии сна (в минутах).
+ */
 public class AverageSessionDurationFunction implements SleepAnalyticsFunction<Double> {
+
+    private static final String DESCRIPTION = "Средняя продолжительность сессии сна (мин)";
 
     @Override
     public String getDescription() {
-        return "Средняя продолжительность сессии сна (мин)";
+        return DESCRIPTION;
     }
 
     @Override

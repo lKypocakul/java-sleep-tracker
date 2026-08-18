@@ -2,11 +2,16 @@ package ru.yandex.practicum.sleeptracker;
 
 import java.util.List;
 
+/**
+ * Считает количество сессий сна с плохим ({@link SleepQuality#BAD}) качеством.
+ */
 public class BadQualitySessionsCountFunction implements SleepAnalyticsFunction<Long> {
+
+    private static final String DESCRIPTION = "Количество сессий с плохим качеством сна";
 
     @Override
     public String getDescription() {
-        return "Количество сессий с плохим качеством сна";
+        return DESCRIPTION;
     }
 
     @Override

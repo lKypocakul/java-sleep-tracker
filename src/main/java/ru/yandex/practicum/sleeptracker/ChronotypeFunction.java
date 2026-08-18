@@ -8,7 +8,23 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class ChronotypeFunction implements SleepAnalyticsFunction<ChronoType> {
+/**
+ * Определяет хронотип пользователя ("сова", "жаворонок" или "голубь") на основе
+ * анализа времени засыпания и пробуждения по ночным сессиям сна.
+ * <p>
+ * Алгоритм:
+ * <ol>
+ *     <li>из всех сессий отбираются только "ночные" — те, что пересекают
+ *     окно [00:00, 06:00); дневные сны и бессонные ночи в подсчёте
+ *     не участвуют;</li>
+ *     <li>каждая ночная сессия классифицируется как "сова", "жаворонок"
+ *     или "голубь";</li>
+ *     <li>итоговый хронотип — тот, что встречается чаще всего.
+ *     При равенстве количеств (или отсутствии ночных сессий) результат —
+ *     "голубь".</li>
+ * </ol>
+ */
+public class ChronotypeFunction implements SleepAnalyticsFunction<Chronotype> {
 
     private static final LocalTime OWL_SLEEP_AFTER = LocalTime.of(23, 0);
     private static final LocalTime OWL_WAKE_AFTER = LocalTime.of(9, 0);
@@ -17,15 +33,16 @@ public class ChronotypeFunction implements SleepAnalyticsFunction<ChronoType> {
 
     private static final LocalTime NIGHT_WINDOW_START = LocalTime.of(0, 0);
     private static final LocalTime NIGHT_WINDOW_END = LocalTime.of(6, 0);
+    private static final String DESCRIPTION = "Хронотип пользователя";
 
     @Override
     public String getDescription() {
-        return "Хронотип пользователя";
+        return DESCRIPTION;
     }
 
     @Override
-    public ChronoType analyze(List<SleepSession> sessions) {
-        Map<ChronoType, Long> counts = sessions.stream()
+    public Chronotype analyze(List<SleepSession> sessions) {
+        Map<Chronotype, Long> counts = sessions.stream()
                 .filter(ChronotypeFunction::isNightSession)
                 .map(ChronotypeFunction::classify)
                 .collect(Collectors.groupingBy(type -> type, Collectors.counting()));
@@ -39,16 +56,20 @@ public class ChronotypeFunction implements SleepAnalyticsFunction<ChronoType> {
                 .count();
 
         if (maxCount == 0 || typesWithMaxCount > 1) {
-            return ChronoType.DOVE;
+            return Chronotype.DOVE;
         }
 
         return counts.entrySet().stream()
                 .filter(entry -> entry.getValue() == maxCount)
                 .map(Map.Entry::getKey)
                 .findFirst()
-                .orElse(ChronoType.DOVE);
+                .orElse(Chronotype.DOVE);
     }
 
+    /**
+     * Сессия считается "ночной", если её интервал пересекает окно [00:00, 06:00)
+     * хотя бы на одну из соседних календарных дат.
+     */
     private static boolean isNightSession(SleepSession session) {
         LocalDate sessionDate = session.start().toLocalDate();
         return Stream.of(sessionDate.minusDays(1), sessionDate, sessionDate.plusDays(1))
@@ -61,16 +82,36 @@ public class ChronotypeFunction implements SleepAnalyticsFunction<ChronoType> {
         return session.start().isBefore(windowEnd) && session.end().isAfter(windowStart);
     }
 
-    private static ChronoType classify(SleepSession session) {
+    private static Chronotype classify(SleepSession session) {
         LocalTime start = session.start().toLocalTime();
         LocalTime end = session.end().toLocalTime();
 
-        if (start.isAfter(OWL_SLEEP_AFTER) && end.isAfter(OWL_WAKE_AFTER)) {
-            return ChronoType.OWL;
+        if (isLaterThanTimeOfNight(start, OWL_SLEEP_AFTER) && isLaterThanTimeOfNight(end, OWL_WAKE_AFTER)) {
+            return Chronotype.OWL;
         }
-        if (start.isBefore(LARK_SLEEP_BEFORE) && end.isBefore(LARK_WAKE_BEFORE)) {
-            return ChronoType.LARK;
+        if (isEarlierThanTimeOfNight(start, LARK_SLEEP_BEFORE) && isEarlierThanTimeOfNight(end, LARK_WAKE_BEFORE)) {
+            return Chronotype.LARK;
         }
-        return ChronoType.DOVE;
+        return Chronotype.DOVE;
+    }
+
+    /**
+     * Сравнивает два момента времени суток в рамках одной "ночи", а не одних календарных
+     * суток: отсчёт ведётся от полудня, поэтому 01:00 корректно считается "позже", чем 23:00
+     * (обычное {@link LocalTime#isAfter} даёт здесь неверный результат из-за перехода через
+     * полночь).
+     */
+    private static boolean isLaterThanTimeOfNight(LocalTime time, LocalTime threshold) {
+        return minutesSinceNoon(time) > minutesSinceNoon(threshold);
+    }
+
+    private static boolean isEarlierThanTimeOfNight(LocalTime time, LocalTime threshold) {
+        return minutesSinceNoon(time) < minutesSinceNoon(threshold);
+    }
+
+    private static long minutesSinceNoon(LocalTime time) {
+        long noonSeconds = LocalTime.NOON.toSecondOfDay();
+        long diffSeconds = Math.floorMod(time.toSecondOfDay() - noonSeconds, 24 * 60 * 60);
+        return diffSeconds / 60;
     }
 }

@@ -2,11 +2,16 @@ package ru.yandex.practicum.sleeptracker;
 
 import java.util.List;
 
+/**
+ * Вычисляет максимальную продолжительность сессии сна (в минутах).
+ */
 public class MaxSessionDurationFunction implements SleepAnalyticsFunction<Long> {
+
+    private static final String DESCRIPTION = "Максимальная продолжительность сессии сна (мин)";
 
     @Override
     public String getDescription() {
-        return "Максимальная продолжительность сессии сна (мин)";
+        return DESCRIPTION;
     }
 
     @Override

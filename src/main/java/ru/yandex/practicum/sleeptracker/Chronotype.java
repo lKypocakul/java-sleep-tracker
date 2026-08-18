@@ -1,13 +1,16 @@
 package ru.yandex.practicum.sleeptracker;
 
-public enum ChronoType {
+/**
+ * Хронотип пользователя на основе анализа времени засыпания и пробуждения.
+ */
+public enum Chronotype {
     OWL("Сова"),
     LARK("Жаворонок"),
     DOVE("Голубь");
 
     private final String displayName;
 
-    ChronoType(String displayName) {
+    Chronotype(String displayName) {
         this.displayName = displayName;
     }
 

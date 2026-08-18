@@ -7,15 +7,27 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Stream;
 
+/**
+ * Считает количество бессонных ночей за период логирования.
+ * <p>
+ * Периодом логирования считается интервал от начала первой сессии сна
+ * в файле до окончания последней (часы носятся не снимая).
+ * Ночь считается "бессонной", если ни одна сессия сна не пересекает
+ * интервал [00:00, 06:00) этой ночи.
+ * <p>
+ * Если первая сессия началась после полудня, отсчёт ночей начинается со
+ * следующей ночи, если до полудня (включительно) — с предыдущей.
+ */
 public class SleeplessNightsCountFunction implements SleepAnalyticsFunction<Integer> {
 
     private static final LocalTime NOON = LocalTime.NOON;
     private static final LocalTime NIGHT_WINDOW_START = LocalTime.of(0, 0);
     private static final LocalTime NIGHT_WINDOW_END = LocalTime.of(6, 0);
+    private static final String DESCRIPTION = "Количество бессонных ночей";
 
     @Override
     public String getDescription() {
-        return "Количество бессонных ночей";
+        return DESCRIPTION;
     }
 
     @Override
@@ -24,7 +36,10 @@ public class SleeplessNightsCountFunction implements SleepAnalyticsFunction<Inte
             return 0;
         }
 
-        LocalDateTime firstStart = sessions.get(0).start();
+        LocalDateTime firstStart = sessions.stream()
+                .map(SleepSession::start)
+                .min(LocalDateTime::compareTo)
+                .orElseThrow();
         LocalDateTime lastEnd = sessions.stream()
                 .map(SleepSession::end)
                 .max(LocalDateTime::compareTo)

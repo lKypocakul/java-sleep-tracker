@@ -40,7 +40,7 @@ class ChronotypeFunctionTest {
                 owl(LocalDateTime.of(2024, 1, 4, 0, 0))
         );
 
-        assertEquals(ChronoType.LARK, function.analyze(sessions));
+        assertEquals(Chronotype.LARK, function.analyze(sessions));
     }
 
     @Test
@@ -52,7 +52,7 @@ class ChronotypeFunctionTest {
                 lark(LocalDateTime.of(2024, 1, 4, 0, 0))
         );
 
-        assertEquals(ChronoType.OWL, function.analyze(sessions));
+        assertEquals(Chronotype.OWL, function.analyze(sessions));
     }
 
     @Test
@@ -64,7 +64,7 @@ class ChronotypeFunctionTest {
                 lark(LocalDateTime.of(2024, 1, 4, 0, 0))
         );
 
-        assertEquals(ChronoType.DOVE, function.analyze(sessions));
+        assertEquals(Chronotype.DOVE, function.analyze(sessions));
     }
 
     @Test
@@ -76,7 +76,7 @@ class ChronotypeFunctionTest {
                 lark(LocalDateTime.of(2024, 1, 4, 0, 0))
         );
 
-        assertEquals(ChronoType.DOVE, function.analyze(sessions));
+        assertEquals(Chronotype.DOVE, function.analyze(sessions));
     }
 
     @Test
@@ -86,7 +86,7 @@ class ChronotypeFunctionTest {
                 daytimeNap(LocalDateTime.of(2024, 1, 2, 0, 0))
         );
 
-        assertEquals(ChronoType.DOVE, function.analyze(sessions));
+        assertEquals(Chronotype.DOVE, function.analyze(sessions));
     }
 
     @Test
@@ -98,6 +98,30 @@ class ChronotypeFunctionTest {
                 daytimeNap(LocalDateTime.of(2024, 1, 4, 0, 0))
         );
 
-        assertEquals(ChronoType.LARK, function.analyze(sessions));
+        assertEquals(Chronotype.LARK, function.analyze(sessions));
+    }
+
+    @Test
+    void classifiesAsOwl_whenFallingAsleepAfterMidnight() {
+        // Falling asleep at 00:xx is later in the night than 23:00, even though as a raw
+        // LocalTime-of-day comparison 00:30 is numerically "before" 23:00. This is exactly
+        // the midnight-rollover case that a naive LocalTime#isAfter/#isBefore comparison
+        // gets wrong.
+        List<SleepSession> sessions = List.of(
+                new SleepSession(
+                        LocalDateTime.of(2024, 1, 2, 0, 30),
+                        LocalDateTime.of(2024, 1, 2, 10, 0),
+                        SleepQuality.NORMAL),
+                new SleepSession(
+                        LocalDateTime.of(2024, 1, 3, 0, 45),
+                        LocalDateTime.of(2024, 1, 3, 10, 30),
+                        SleepQuality.NORMAL),
+                new SleepSession(
+                        LocalDateTime.of(2024, 1, 4, 0, 15),
+                        LocalDateTime.of(2024, 1, 4, 9, 45),
+                        SleepQuality.NORMAL)
+        );
+
+        assertEquals(Chronotype.OWL, function.analyze(sessions));
     }
 }

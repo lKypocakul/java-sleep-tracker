@@ -106,4 +106,40 @@ class SleeplessNightsCountFunctionTest {
 
         assertEquals(0, function.analyze(sessions));
     }
+
+    @Test
+    void computesCorrectly_whenSessionsAreNotSortedByStartTime() {
+        // Same scenario as returnsOne_whenThereIsAGapBetweenTwoNights, but the sessions are
+        // listed out of chronological order. The function must not assume sessions.get(0)
+        // is the earliest one.
+        List<SleepSession> sessions = List.of(
+                new SleepSession(
+                        LocalDateTime.of(2024, 1, 3, 23, 0),
+                        LocalDateTime.of(2024, 1, 4, 6, 0),
+                        SleepQuality.GOOD),
+                new SleepSession(
+                        LocalDateTime.of(2024, 1, 1, 23, 0),
+                        LocalDateTime.of(2024, 1, 2, 6, 0),
+                        SleepQuality.GOOD)
+        );
+
+        assertEquals(1, function.analyze(sessions));
+    }
+
+    @Test
+    void handlesLoggingIntervalThatCrossesAMonthBoundary() {
+        // Logging interval spans January into February; the night of Feb 1st has no sleep.
+        List<SleepSession> sessions = List.of(
+                new SleepSession(
+                        LocalDateTime.of(2024, 1, 30, 23, 0),
+                        LocalDateTime.of(2024, 1, 31, 6, 0),
+                        SleepQuality.GOOD),
+                new SleepSession(
+                        LocalDateTime.of(2024, 2, 1, 23, 0),
+                        LocalDateTime.of(2024, 2, 2, 6, 0),
+                        SleepQuality.GOOD)
+        );
+
+        assertEquals(1, function.analyze(sessions));
+    }
 }
